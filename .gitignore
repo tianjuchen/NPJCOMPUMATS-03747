@@ -7,10 +7,15 @@ __pycache__/
 *.swp
 *~
 *.png
+*.jpg
+*.bmp
+*.pdf
+*.tiff
+*.tif
+*.pth
 learning
 *.pickle
 *.pt
-*.pdf
 *.lyx
 *.zip
 **/loss-history.txt

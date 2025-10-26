@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -15,17 +16,18 @@ matplotlib.rc('xtick', labelsize=16)
 matplotlib.rc('ytick', labelsize=16)
 
 def preprocess(x):
-    X_func = np.reshape(x, (-1, 100, 14, 14))
+    img_size = x.shape[0]
+    X_func = np.reshape(x, (-1, img_size, 14, 14))
     index = list(range(10, 90))
     X_func = X_func[:, list(range(10, 90))]
     X_func = np.transpose(X_func, axes=[0, 2, 3, 1])
     print(X_func.shape)
 
-    X_loc = np.array(index) / 100
+    X_loc = np.array(index) / img_size
     X_loc = X_loc[:, None]
     print(X_loc.shape)
 
-    y = np.reshape(x, (-1, 100, 196))
+    y = np.reshape(x, (-1, img_size, 196))
     y = y[:, index]
     print(y.shape)
 
@@ -99,10 +101,10 @@ def main():
     Par = {}
     
     # 加载数据集
-    train_dataset = np.load('data/train_ld.npz')['X_func']
-    test_dataset = np.load('data/test_ld.npz')['X_func']
+    train_dataset = np.load('./../data/ss316/train_ld.npz')['X_func']
+    test_dataset = np.load('./../data/ss316/test_ld.npz')['X_func']
     
-    Par['address'] = 'saved_models/don_models'
+    Par['address'] = 'saved_models/ss316_don_models'
     os.makedirs(Par['address'], exist_ok=True)
     
     print(Par['address'])
@@ -135,7 +137,7 @@ def main():
     don_model = DeepONet_Model(Par).to(device)
     
     # 训练参数
-    n_epochs = 12
+    n_epochs = 50
     batch_size = 1
     
     # 优化器
@@ -204,21 +206,21 @@ def main():
     plt.yscale('log')
     plt.xlabel("Epoch", fontsize=18)
     plt.ylabel("MSE", fontsize=18)
-    plt.savefig(f"{Par['address']}/convergence.png", dpi=800)
+    plt.savefig(f"{Par['address']}/convergence.pdf", dpi=800)
     plt.close()
     
     # 加载最佳模型并评估
     if True:
         # 加载AE模型
         ae_model = AE().to(device)
-        ae_model_number = np.load('saved_models/ae_models/best_ae_model_number.npy')
+        ae_model_number = np.load('saved_models/ss316_ae_models/best_ae_model_number.npy')
         ae_model_address = f"saved_models/ae_models/model_{ae_model_number}.pth"
         ae_model.load_state_dict(torch.load(ae_model_address, map_location=device))
         
         # 加载最佳DeepONet模型
         don_model = DeepONet_Model(Par).to(device)
         don_model_number = index_list[np.argmin(val_loss_list)]
-        np.save('data/best_don_model_number.npy', don_model_number)
+        np.save('./../data/ss316/best_don_model_number.npy', don_model_number)
         don_model_address = f"{Par['address']}/model_{don_model_number}.pth"
         don_model.load_state_dict(torch.load(don_model_address, map_location=device))
         
@@ -232,7 +234,7 @@ def main():
         pf_true = np.reshape(pf_true, (-1, 100, 128, 128))
         pf_true_train = pf_true[:n_samples, 10:]
         
-        pf_true = np.load('data/test_128_128.npz')['X_func'].astype(np.float32)
+        pf_true = np.load('./../images/image_dataset_ss316_128_128.npz')['X_test'].astype(np.float32)
         pf_true = (pf_true[:10000] - np.min(pf_true)) / (np.max(pf_true) - np.min(pf_true))
         pf_true = np.reshape(pf_true, (-1, 100, 128, 128))
         pf_true_test = pf_true[:n_samples, 10:]

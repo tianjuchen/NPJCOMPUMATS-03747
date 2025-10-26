@@ -10,12 +10,11 @@ def encode_decode(model, x, fname, make_fig=False):
     # Convert numpy array to torch tensor and move to model device
     device = next(model.parameters()).device
     x_tensor = torch.from_numpy(x).float().to(device)
-
     # Encode
     with torch.no_grad():
         ld = model.encode(x_tensor)
     print("low dimensional data: ", ld.shape)
-
+    
     if make_fig:
         # Decode
         with torch.no_grad():
@@ -52,7 +51,7 @@ def encode_decode(model, x, fname, make_fig=False):
             cbar = fig.colorbar(cont1, ax=ax2, cax=cax)
             cbar.ax.tick_params(labelsize=15)
 
-            plt.savefig(fname + "/t_" + str(t) + ".png")
+            plt.savefig(fname + "/t_" + str(t) + ".pdf")
             plt.close(fig)  # Close figure to free memory
 
     # Convert latent representation back to numpy
@@ -60,19 +59,19 @@ def encode_decode(model, x, fname, make_fig=False):
 
 
 def main():
-    address = "./../saved_models/ae_models"
+    address = "./../saved_models/ss316_ae_models"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
     # Loading data
-    d = np.load("./../data/train_128_128.npz")
-    x_train = d["X_func"]
+    d = np.load("./../images/image_dataset_ss316_128_128.npz")
+    x_train = d["X_train"]
     x_train = (x_train - np.min(x_train)) / (np.max(x_train) - np.min(x_train))
     x_train = np.reshape(
         x_train, (x_train.shape[0], x_train.shape[1], x_train.shape[2], 1)
     )
 
-    d = np.load("./../data/test_128_128.npz")
-    x_test = d["X_func"]
+    d = np.load("./../images/image_dataset_ss316_128_128.npz")
+    x_test = d["X_test"]
     x_test = (x_test - np.min(x_test)) / (np.max(x_test) - np.min(x_test))
     x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], x_test.shape[2], 1))
 
@@ -90,27 +89,27 @@ def main():
     batch_size = 1
     train_ld_ls = []
     test_ld_ls = []
-
+    
     # Process training data
     for end in np.arange(batch_size, x_train.shape[0] + 1, batch_size):
         start = end - batch_size
-        train_ld_ls.append(encode_decode(model, x_train[start:end], "train"))
+        train_ld_ls.append(encode_decode(model, x_train[start:end], "train", make_fig=False))
         print("end: ", end)
 
     # Process test data
     for end in np.arange(batch_size, x_test.shape[0] + 1, batch_size):
         start = end - batch_size
-        test_ld_ls.append(encode_decode(model, x_test[start:end], "test"))
+        test_ld_ls.append(encode_decode(model, x_test[start:end], "test", make_fig=False))
         print("end: ", end)
 
     # Concatenate results
     train_ld = np.concatenate(train_ld_ls, axis=0)
     print("train_ld: ", train_ld.shape)
-    np.savez("./../data/train_ld", X_func=train_ld)
+    np.savez("./../data/ss316/train_ld", X_func=train_ld)
 
     test_ld = np.concatenate(test_ld_ls, axis=0)
     print("test_ld: ", test_ld.shape)
-    np.savez("./../data/test_ld", X_func=test_ld)
+    np.savez("./../data/ss316/test_ld", X_func=test_ld)
 
     print("Complete")
 

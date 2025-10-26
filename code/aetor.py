@@ -78,9 +78,15 @@ class AE(nn.Module):
         return [train_loss]
     
     def encode(self, x):
+        print("Original shape:", x.shape)  # Show full shape for clarity
         # x - [batch_size, 1, 128, 128] or [batch_size, 128, 128]
         if x.dim() == 3:
+            # Add channel dimension (1) at position 1 for [batch, 1, H, W]
             x = x.unsqueeze(1)
+        elif x.dim() == 4 and x.shape[1] != 1 and x.shape[-1] == 1:
+            # Remove redundant last dimension, then add channel dimension at position 1
+            x = x.squeeze(-1).unsqueeze(1)
+        print("Adjusted shape:", x.shape)
         return self.encoder(x)
     
     def decode(self, x):
