@@ -3,6 +3,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+class SinActivation(nn.Module):
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, x):
+        return torch.sin(x)  # 或 F.sin(x)
+        
+
 class DeepONet_Model(nn.Module):
     def __init__(self, Par):
         super(DeepONet_Model, self).__init__()
@@ -42,7 +51,7 @@ class DeepONet_Model(nn.Module):
                 stride=1,
                 padding=0  # 无填充，14x14 → 12x12
             ),
-            nn.Activation(F.sin),  # 正弦激活函数（替代ReLU）
+            SinActivation(),  # 正弦激活函数（替代ReLU）
             nn.BatchNorm2d(32),    # 批归一化
             
             # 卷积层2：16个3x3滤波器
@@ -53,7 +62,7 @@ class DeepONet_Model(nn.Module):
                 stride=1,
                 padding=0  # 12x12 → 10x10
             ),
-            nn.Activation(F.sin),
+            SinActivation(),
             nn.BatchNorm2d(16),
             
             # 卷积层3：16个3x3滤波器
@@ -64,7 +73,7 @@ class DeepONet_Model(nn.Module):
                 stride=1,
                 padding=0  # 10x10 → 8x8
             ),
-            nn.Activation(F.sin),
+            SinActivation(),
             nn.BatchNorm2d(16),
             
             # 展平特征图
@@ -78,11 +87,11 @@ class DeepONet_Model(nn.Module):
         return nn.Sequential(
             # 全连接层1：100个单元
             nn.Linear(1, 100),  # 输入为1D位置坐标
-            nn.Activation(F.sin),
+            SinActivation(),
             
             # 全连接层2：100个单元
             nn.Linear(100, 100),
-            nn.Activation(F.sin),
+            SinActivation(),
             
             # 全连接层：投影到m*latent_dim维度
             nn.Linear(100, self.m * self.latent_dim)
