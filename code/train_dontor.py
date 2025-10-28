@@ -40,7 +40,6 @@ def preprocess(x):
 
     return X_func, X_loc, y
 
-
 def tensor(x, device):
     return torch.FloatTensor(x).to(device)
 

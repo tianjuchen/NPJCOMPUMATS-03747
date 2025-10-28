@@ -9,8 +9,8 @@ class SinActivation(nn.Module):
         super().__init__()
     
     def forward(self, x):
-        return torch.sin(x)  # 或 F.sin(x)
-        
+        return torch.sin(x)
+
 
 class DeepONet_Model(nn.Module):
     def __init__(self, Par):
@@ -43,16 +43,17 @@ class DeepONet_Model(nn.Module):
     def build_branch_net(self):
         """构建分支网络：处理2D输入函数（如图像）"""
         return nn.Sequential(
-            # 卷积层1：32个3x3滤波器，输入形状为[channels, 14, 14]（PyTorch使用通道优先格式）
+            # 卷积层1：32个3x3滤波器
             nn.Conv2d(
                 in_channels=self.Par['n_channels'],
                 out_channels=32,
                 kernel_size=3,
                 stride=1,
-                padding=0  # 无填充，14x14 → 12x12
+                padding=1  # 使用padding=1保持空间尺寸
             ),
-            SinActivation(),  # 正弦激活函数（替代ReLU）
-            nn.BatchNorm2d(32),    # 批归一化
+            SinActivation(),
+            nn.BatchNorm2d(32),
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 下采样
             
             # 卷积层2：16个3x3滤波器
             nn.Conv2d(
@@ -60,10 +61,11 @@ class DeepONet_Model(nn.Module):
                 out_channels=16,
                 kernel_size=3,
                 stride=1,
-                padding=0  # 12x12 → 10x10
+                padding=1
             ),
             SinActivation(),
             nn.BatchNorm2d(16),
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 下采样
             
             # 卷积层3：16个3x3滤波器
             nn.Conv2d(
@@ -71,22 +73,25 @@ class DeepONet_Model(nn.Module):
                 out_channels=16,
                 kernel_size=3,
                 stride=1,
-                padding=0  # 10x10 → 8x8
+                padding=1
             ),
             SinActivation(),
             nn.BatchNorm2d(16),
             
+            # 自适应平均池化，将特征图统一到固定大小
+            nn.AdaptiveAvgPool2d((4, 4)),
+            
             # 展平特征图
             nn.Flatten(),
             # 全连接层：投影到m*latent_dim维度
-            nn.Linear(16 * 8 * 8, self.m * self.latent_dim)  # 16通道×8×8特征图 → 输出维度
+            nn.Linear(16 * 4 * 4, self.m * self.latent_dim)
         )
 
     def build_trunk_net(self):
         """构建主干网络：处理查询位置（如空间/时间坐标）"""
         return nn.Sequential(
             # 全连接层1：100个单元
-            nn.Linear(1, 100),  # 输入为1D位置坐标
+            nn.Linear(1, 100),
             SinActivation(),
             
             # 全连接层2：100个单元
@@ -99,10 +104,13 @@ class DeepONet_Model(nn.Module):
 
     def forward(self, X_func, X_loc):
         """前向传播：组合分支网络和主干网络的输出"""
-        # X_func：输入函数，形状为[batch_size, n_channels, 14, 14]（PyTorch通道优先）
+        # X_func：输入函数，形状为[batch_size, height, width, channels] 
         # X_loc：查询位置，形状为[n_locations, 1]
         
         # 1. 处理输入函数（分支网络）
+        # 将X_func从[batch_size, height, width, channels]转换为[batch_size, channels, height, width]
+        X_func = X_func.permute(0, 3, 1, 2)
+        
         # 归一化输入函数（使用预计算的均值和标准差）
         y_func = (X_func - self.Par['mean']) / self.Par['std']
         # 传入分支网络
@@ -120,14 +128,13 @@ class DeepONet_Model(nn.Module):
         y_loc = y_loc.view(-1, self.m, self.latent_dim)    # [n_locations, m, latent_dim]
         
         # 张量收缩（tensor contraction）：在latent_dim维度上计算点积，组合特征
-        # 等价于原TensorFlow的einsum('ijk,pjk->ipj')
         Y = torch.einsum('ijk,pjk->ipj', y_func, y_loc)  # 输出：[batch_size, n_locations, m]
         
         return Y
 
-    def loss_fn(self, y_pred, y_train):
+    def loss(self, y_pred, y_train):
         """损失函数：均方误差（MSE）"""
-        return torch.mean(torch.square(y_pred - y_train))
+        return torch.mean(torch.square(y_pred - y_train)),
 
     def get_optimizer(self):
         """获取优化器（便于外部调用）"""
