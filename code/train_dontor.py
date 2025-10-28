@@ -126,6 +126,15 @@ def main():
     X_func_test, X_loc_test, y_test = preprocess(test_dataset)
     Par["n_channels"] = X_func_train.shape[-1]
 
+    """
+    print("X_func_train shape is:", X_func_train.shape)
+    print("")
+    print("X_loc_train shape is:", X_loc_train.shape)
+    print("")
+    print("y_train shape is:", y_train.shape)
+    print("")
+    sys.exit("stop")
+    """
     print(
         "X_func_train: ",
         X_func_train.shape,

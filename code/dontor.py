@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import torch
 import torch.nn as nn
@@ -45,17 +46,27 @@ class DeepONet_Model(nn.Module):
         return nn.Sequential(
             # 卷积层1：32个3x3滤波器
             nn.Conv2d(
-                in_channels=self.Par['n_channels'],
+                in_channels=self.Par['n_channels'],  # 12 channels
                 out_channels=32,
                 kernel_size=3,
                 stride=1,
-                padding=1  # 使用padding=1保持空间尺寸
+                padding=1  # 保持14x14尺寸
             ),
             SinActivation(),
             nn.BatchNorm2d(32),
-            nn.MaxPool2d(kernel_size=2, stride=2),  # 下采样
             
-            # 卷积层2：16个3x3滤波器
+            # 卷积层2：32个3x3滤波器
+            nn.Conv2d(
+                in_channels=32,
+                out_channels=32,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            ),
+            SinActivation(),
+            nn.BatchNorm2d(32),
+            
+            # 卷积层3：16个3x3滤波器
             nn.Conv2d(
                 in_channels=32,
                 out_channels=16,
@@ -65,26 +76,14 @@ class DeepONet_Model(nn.Module):
             ),
             SinActivation(),
             nn.BatchNorm2d(16),
-            nn.MaxPool2d(kernel_size=2, stride=2),  # 下采样
-            
-            # 卷积层3：16个3x3滤波器
-            nn.Conv2d(
-                in_channels=16,
-                out_channels=16,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            ),
-            SinActivation(),
-            nn.BatchNorm2d(16),
             
             # 自适应平均池化，将特征图统一到固定大小
-            nn.AdaptiveAvgPool2d((4, 4)),
+            nn.AdaptiveAvgPool2d((7, 7)),  # 调整为7x7以匹配196=14*14
             
             # 展平特征图
             nn.Flatten(),
             # 全连接层：投影到m*latent_dim维度
-            nn.Linear(16 * 4 * 4, self.m * self.latent_dim)
+            nn.Linear(16 * 7 * 7, self.m * self.latent_dim)  # 16*7*7 = 784
         )
 
     def build_trunk_net(self):
@@ -139,3 +138,54 @@ class DeepONet_Model(nn.Module):
     def get_optimizer(self):
         """获取优化器（便于外部调用）"""
         return torch.optim.Adam(self.parameters(), lr=self.lr)
+        
+        
+        
+if __name__ == "__main__":
+  
+    a = nn.Sequential(
+        # 卷积层1：32个3x3滤波器
+        nn.Conv2d(
+            in_channels=12,
+            out_channels=32,
+            kernel_size=3,
+            stride=1,
+            padding=1  # 保持14x14尺寸
+        ),
+        SinActivation(),
+        nn.BatchNorm2d(32),
+        
+        # 卷积层2：32个3x3滤波器
+        nn.Conv2d(
+            in_channels=32,
+            out_channels=32,
+            kernel_size=3,
+            stride=1,
+            padding=1
+        ),
+        SinActivation(),
+        nn.BatchNorm2d(32),
+        
+        # 卷积层3：16个3x3滤波器
+        nn.Conv2d(
+            in_channels=32,
+            out_channels=16,
+            kernel_size=3,
+            stride=1,
+            padding=1
+        ),
+        SinActivation(),
+        nn.BatchNorm2d(16),
+        
+        # 自适应平均池化，将特征图统一到固定大小
+        nn.AdaptiveAvgPool2d((7, 7)),  # 调整为7x7以匹配196=14*14
+        
+        # 展平特征图
+        nn.Flatten(),
+        # 全连接层：投影到m*latent_dim维度
+        nn.Linear(16 * 7 * 7, 5 * 196)  # 16*7*7 = 784
+    )
+    
+    input = torch.rand(1, 3, 14, 14)
+    output = a(input)
+    print(output.shape)
