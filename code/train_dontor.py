@@ -18,25 +18,35 @@ matplotlib.rc("xtick", labelsize=16)
 matplotlib.rc("ytick", labelsize=16)
 
 
-def preprocess(x):
+def preprocess(x, target_channels=12):
     img_size = x.shape[0]
     X_func = np.reshape(x, (-1, img_size, 14, 14))
 
-    index = list(range(0, img_size))
-    # index = list(range(10, 90)) # focus on a specific range of time steps or features
-    # X_func = X_func[:, list(range(10, 90))]
+    index = list(range(0, img_size - 1))
 
     # aligning with the input format expected by DeepONet (e.g., (samples, height, width, features)
     X_func = np.transpose(X_func, axes=[0, 2, 3, 1])
-    print(X_func.shape)
+    
+    # Ensure consistent channel dimensions
+    current_channels = X_func.shape[-1]
+    if current_channels != target_channels:
+        if current_channels < target_channels:
+            # Pad with zeros to reach target_channels
+            padding = np.zeros((X_func.shape[0], X_func.shape[1], X_func.shape[2], target_channels - current_channels))
+            X_func = np.concatenate([X_func, padding], axis=-1)
+        else:
+            # Truncate if there are too many channels
+            X_func = X_func[:, :, :, :target_channels]
+    
+    print(f"X_func shape after channel adjustment: {X_func.shape}")
 
     X_loc = np.array(index) / img_size
     X_loc = X_loc[:, None]
-    print(X_loc.shape)
+    print(f"X_loc shape: {X_loc.shape}")
 
     y = np.reshape(x, (-1, img_size, 196))
     y = y[:, index]
-    print(y.shape)
+    print(f"y shape: {y.shape}")
 
     return X_func, X_loc, y
 
@@ -122,29 +132,18 @@ def main():
     print(Par["address"])
     print("------\n")
 
+    """
     # 数据预处理
     X_func_train, X_loc_train, y_train = preprocess(train_dataset)
     X_func_test, X_loc_test, y_test = preprocess(test_dataset)
     Par["n_channels"] = X_func_train.shape[-1]
-
     """
-    print("X_func_train shape is:", X_func_train.shape)
-    print("")
-    print("X_loc_train shape is:", X_loc_train.shape)
-    print("")
-    print("y_train shape is:", y_train.shape)
-    print("")
     
-    print("X_func_test shape is:", X_func_test.shape)
-    print("")
-    print("X_loc_test shape is:", X_loc_test.shape)
-    print("")
-    print("y_test shape is:", y_test.shape)
-    print("")
-    
-    
-    sys.exit("stop")
-    """
+    # Data preprocessing with consistent channels
+    target_channels = 12  # Use the same for both train and test
+    X_func_train, X_loc_train, y_train = preprocess(train_dataset, target_channels=target_channels)
+    X_func_test, X_loc_test, y_test = preprocess(test_dataset, target_channels=target_channels)
+    Par["n_channels"] = target_channels  # Always use the target channels
 
     print(
         "X_func_train: ",
@@ -323,4 +322,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
