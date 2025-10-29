@@ -22,7 +22,7 @@ def preprocess(x):
     img_size = x.shape[0]
     X_func = np.reshape(x, (-1, img_size, 14, 14))
 
-    index = list(range(0, img_size - 1))
+    index = list(range(0, img_size))
     # index = list(range(10, 90)) # focus on a specific range of time steps or features
     # X_func = X_func[:, list(range(10, 90))]
 
@@ -39,6 +39,7 @@ def preprocess(x):
     print(y.shape)
 
     return X_func, X_loc, y
+
 
 def tensor(x, device):
     return torch.FloatTensor(x).to(device)
@@ -133,8 +134,18 @@ def main():
     print("")
     print("y_train shape is:", y_train.shape)
     print("")
+    
+    print("X_func_test shape is:", X_func_test.shape)
+    print("")
+    print("X_loc_test shape is:", X_loc_test.shape)
+    print("")
+    print("y_test shape is:", y_test.shape)
+    print("")
+    
+    
     sys.exit("stop")
     """
+
     print(
         "X_func_train: ",
         X_func_train.shape,
