@@ -322,7 +322,8 @@ def main():
             pf_true_train,
             device,
         )
-
+        """
+        # we have to skip this part due to limited data we have, will re-test using more data
         print("Test Dataset")
         show_error(
             don_model,
@@ -332,7 +333,7 @@ def main():
             pf_true_test,
             device,
         )
-
+        """
         print("--------Complete--------")
 
 
