@@ -18,6 +18,8 @@ learning
 *.pt
 *.lyx
 *.zip
+*.npz
+*.npy
 **/loss-history.txt
 *.prof
 **/#*.lyx#

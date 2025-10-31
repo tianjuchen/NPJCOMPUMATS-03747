@@ -26,18 +26,25 @@ def preprocess(x, target_channels=12):
 
     # aligning with the input format expected by DeepONet (e.g., (samples, height, width, features)
     X_func = np.transpose(X_func, axes=[0, 2, 3, 1])
-    
+
     # Ensure consistent channel dimensions
     current_channels = X_func.shape[-1]
     if current_channels != target_channels:
         if current_channels < target_channels:
             # Pad with zeros to reach target_channels
-            padding = np.zeros((X_func.shape[0], X_func.shape[1], X_func.shape[2], target_channels - current_channels))
+            padding = np.zeros(
+                (
+                    X_func.shape[0],
+                    X_func.shape[1],
+                    X_func.shape[2],
+                    target_channels - current_channels,
+                )
+            )
             X_func = np.concatenate([X_func, padding], axis=-1)
         else:
             # Truncate if there are too many channels
             X_func = X_func[:, :, :, :target_channels]
-    
+
     print(f"X_func shape after channel adjustment: {X_func.shape}")
 
     X_loc = np.array(index) / img_size
@@ -126,7 +133,7 @@ def main():
     train_dataset = np.load("./../data/ss316/train_ld.npz")["X_func"]
     test_dataset = np.load("./../data/ss316/test_ld.npz")["X_func"]
 
-    Par["address"] = "saved_models/ss316_don_models"
+    Par["address"] = "./../saved_models/ss316_don_models"
     os.makedirs(Par["address"], exist_ok=True)
 
     print(Par["address"])
@@ -138,11 +145,15 @@ def main():
     X_func_test, X_loc_test, y_test = preprocess(test_dataset)
     Par["n_channels"] = X_func_train.shape[-1]
     """
-    
+
     # Data preprocessing with consistent channels
     target_channels = 12  # Use the same for both train and test
-    X_func_train, X_loc_train, y_train = preprocess(train_dataset, target_channels=target_channels)
-    X_func_test, X_loc_test, y_test = preprocess(test_dataset, target_channels=target_channels)
+    X_func_train, X_loc_train, y_train = preprocess(
+        train_dataset, target_channels=target_channels
+    )
+    X_func_test, X_loc_test, y_test = preprocess(
+        test_dataset, target_channels=target_channels
+    )
     Par["n_channels"] = target_channels  # Always use the target channels
 
     print(
@@ -262,9 +273,11 @@ def main():
         # 加载AE模型
         ae_model = AE().to(device)
         ae_model_number = np.load(
-            "saved_models/ss316_ae_models/best_ae_model_number.npy"
+            "./../saved_models/ss316_ae_models/best_ae_model_number.npy"
         )
-        ae_model_address = f"saved_models/ae_models/model_{ae_model_number}.pth"
+        ae_model_address = (
+            f"./../saved_models/ss316_ae_models/model_{ae_model_number}.pth"
+        )
         ae_model.load_state_dict(torch.load(ae_model_address, map_location=device))
 
         # 加载最佳DeepONet模型
@@ -279,7 +292,7 @@ def main():
         n_samples = 20
 
         # 加载真实物理场数据用于误差计算
-        pf_true = np.load("data/train_128_128.npz")["X_func"].astype(np.float32)
+        pf_true = np.load("./../data/train_128_128.npz")["X_func"].astype(np.float32)
         pf_true = (pf_true[:10000] - np.min(pf_true)) / (
             np.max(pf_true) - np.min(pf_true)
         )
@@ -292,7 +305,9 @@ def main():
         pf_true = (pf_true[:10000] - np.min(pf_true)) / (
             np.max(pf_true) - np.min(pf_true)
         )
-        pf_true = np.reshape(pf_true, (-1, 100, 128, 128))
+        print("pf_true shape is:", pf_true.shape)
+        # sys.exit("last debug")
+        pf_true = np.reshape(pf_true, (-1, 3, 128, 128))
         pf_true_test = pf_true[:n_samples, 10:]
 
         X_loc = np.linspace(0, 1, 100)[10:][:, None]
@@ -322,5 +337,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
