@@ -143,6 +143,7 @@ class DeepONet_Model(nn.Module):
         
 if __name__ == "__main__":
   
+    """
     a = nn.Sequential(
         # 卷积层1：32个3x3滤波器
         nn.Conv2d(
@@ -189,3 +190,4 @@ if __name__ == "__main__":
     input = torch.rand(1, 3, 14, 14)
     output = a(input)
     print(output.shape)
+    """
