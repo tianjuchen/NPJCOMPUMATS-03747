@@ -22,7 +22,7 @@ def preprocess(x, target_channels=12):
     img_size = x.shape[0]
     X_func = np.reshape(x, (-1, img_size, 14, 14))
 
-    index = list(range(0, img_size - 1))
+    index = list(range(0, img_size))
 
     # aligning with the input format expected by DeepONet (e.g., (samples, height, width, features)
     X_func = np.transpose(X_func, axes=[0, 2, 3, 1])
